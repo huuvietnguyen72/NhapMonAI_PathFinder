@@ -47,7 +47,7 @@ def haversine(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _result(explored, path, length_m, start_time) -> dict:
+def _result(explored: list, path: list[int], length_m: float | None, start_time: float) -> dict:
     """Đóng gói kết quả thuật toán thành dict chuẩn."""
     return {
         "explored": explored,
@@ -106,7 +106,7 @@ def dfs(graph: Graph, start: int, end: int) -> dict:
             break
         for neighbor, _ in graph.adjacency.get(node, []):
             if neighbor not in visited:
-                parent.setdefault(neighbor, node)
+                parent.setdefault(neighbor, node)  # setdefault: chỉ ghi lần đầu, giữ đường đi đầu tiên tìm thấy
                 stack.append(neighbor)
 
     path = reconstruct_path(parent, start, end)
