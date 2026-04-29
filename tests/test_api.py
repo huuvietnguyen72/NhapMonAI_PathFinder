@@ -76,3 +76,12 @@ def test_pathfind_nut_bat_dau_khong_ton_tai(client):
 def test_pathfind_nut_ket_thuc_khong_ton_tai(client):
     response = client.post("/pathfind", json={"start_node": 1, "end_node": 9999})
     assert response.status_code == 404
+
+
+def test_pathfind_khong_co_duong(client):
+    # Nút 5 không có cạnh đi ra, không có đường nào từ 5 → 1
+    response = client.post("/pathfind", json={"start_node": 5, "end_node": 1})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dijkstra"]["path"] == []
+    assert data["dijkstra"]["length_m"] is None

@@ -2,7 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -14,7 +14,14 @@ from algorithms import bfs, dfs, dijkstra, astar
 DATA_DIR = Path(__file__).parent.parent / "data"
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
-graph: Graph = None
+graph: Graph | None = None
+
+
+def require_graph() -> Graph:
+    """Dependency đảm bảo đồ thị đã được nạp trước khi xử lý request."""
+    if graph is None:
+        raise HTTPException(status_code=503, detail="Đồ thị chưa sẵn sàng — server đang khởi động")
+    return graph
 
 
 @asynccontextmanager
@@ -52,29 +59,29 @@ class PathfindRequest(BaseModel):
 
 
 @app.get("/nodes", summary="Lấy toàn bộ danh sách nút")
-def get_nodes():
+def get_nodes(g: Graph = Depends(require_graph)):
     """Trả về tất cả nút trong đồ thị (dùng cho snapping ở frontend)."""
     return [
         {"id": nid, "lat": lat, "lng": lng}
-        for nid, (lat, lng) in graph.coords.items()
+        for nid, (lat, lng) in g.coords.items()
     ]
 
 
 @app.post("/pathfind", summary="Tìm đường giữa 2 nút")
-def pathfind(req: PathfindRequest):
+def pathfind(req: PathfindRequest, g: Graph = Depends(require_graph)):
     """
     Chạy 4 thuật toán BFS, DFS, Dijkstra, A* và trả kết quả.
     Mỗi kết quả gồm: explored (thứ tự duyệt), path (đường đi), length_m, time_ms.
     """
-    if req.start_node not in graph.coords:
+    if req.start_node not in g.coords:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy nút bắt đầu: {req.start_node}")
-    if req.end_node not in graph.coords:
+    if req.end_node not in g.coords:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy nút kết thúc: {req.end_node}")
     return {
-        "bfs":      bfs(graph, req.start_node, req.end_node),
-        "dfs":      dfs(graph, req.start_node, req.end_node),
-        "dijkstra": dijkstra(graph, req.start_node, req.end_node),
-        "astar":    astar(graph, req.start_node, req.end_node),
+        "bfs":      bfs(g, req.start_node, req.end_node),
+        "dfs":      dfs(g, req.start_node, req.end_node),
+        "dijkstra": dijkstra(g, req.start_node, req.end_node),
+        "astar":    astar(g, req.start_node, req.end_node),
     }
 
 
