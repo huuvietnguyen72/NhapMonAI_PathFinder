@@ -1,0 +1,149 @@
+/* Reset toàn bộ margin và padding, dùng box-sizing border-box */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Biến màu sắc toàn cục */
+:root {
+  --bg-dark:   #1a1a2e;   /* Nền tối nhất */
+  --bg-mid:    #16213e;   /* Nền panel */
+  --bg-light:  #0f3460;   /* Nền thẻ */
+  --accent:    #e94560;   /* Màu nhấn (đỏ) */
+  --text:      #eeeeee;   /* Màu chữ chính */
+  --muted:     #aaaaaa;   /* Màu chữ phụ */
+  /* Màu riêng từng thuật toán */
+  --bfs:       #4ecdc4;
+  --dfs:       #ff6b6b;
+  --dijkstra:  #ffd166;
+  --astar:     #06d6a0;
+}
+
+/* Cấu trúc trang: flex dọc, chiếm toàn bộ chiều cao màn hình */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-dark);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+}
+
+/* Thanh điều hướng trên cùng */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--bg-light);
+  flex-shrink: 0;
+}
+/* Tên thương hiệu nổi bật */
+.brand   { font-weight: 700; font-size: 15px; color: var(--accent); }
+/* Phụ đề nhỏ hơn */
+.nav-sub { color: var(--muted); font-size: 12px; }
+
+/* Layout 2 cột: panel trái + bản đồ phải */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* Panel điều khiển bên trái */
+.panel {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-mid);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;       /* Cuộn dọc nếu nội dung dài */
+  border-right: 1px solid var(--bg-light);
+}
+
+/* Mỗi nhóm điều khiển trong panel */
+.panel-section { display: flex; flex-direction: column; gap: 5px; }
+
+/* Nhãn chữ hoa nhỏ */
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Hiển thị tọa độ điểm đã chọn */
+.coord-display {
+  background: var(--bg-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #7fdbff;
+  min-height: 34px;
+  font-size: 12px;
+}
+
+/* Thanh kéo điều chỉnh tốc độ hoạt ảnh */
+#speed-slider { width: 100%; accent-color: var(--accent); cursor: pointer; margin-top: 2px; }
+/* Nhãn hai đầu thanh kéo */
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Nút chạy chính (màu nhấn) */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+/* Nút bị vô hiệu hóa khi chưa chọn đủ điểm */
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary:not(:disabled):hover { opacity: 0.85; }
+
+/* Nút xóa phụ */
+.btn-secondary {
+  background: var(--bg-light);
+  color: var(--muted);
+  border: 1px solid #2a2a4a;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.btn-secondary:hover { color: var(--text); }
+
+/* Đường kẻ ngang phân cách */
+.divider { border: none; border-top: 1px solid var(--bg-light); }
+
+/* Thẻ hiển thị kết quả từng thuật toán */
+.stat-card {
+  background: var(--bg-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid;  /* Viền màu trái để phân biệt thuật toán */
+}
+/* Màu viền trái theo từng thuật toán */
+#card-bfs      { border-color: var(--bfs); }
+#card-dfs      { border-color: var(--dfs); }
+#card-dijkstra { border-color: var(--dijkstra); }
+#card-astar    { border-color: var(--astar); }
+
+/* Tên thuật toán trong thẻ */
+.stat-title { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+/* Màu chữ tên riêng từng thuật toán */
+.bfs-text      { color: var(--bfs); }
+.dfs-text      { color: var(--dfs); }
+.dijkstra-text { color: var(--dijkstra); }
+.astar-text    { color: var(--astar); }
+
+/* Hàng thống kê (nhãn mờ, giá trị sáng) */
+.stat-row         { color: var(--muted); line-height: 1.7; }
+.stat-row span    { color: var(--text); font-weight: 600; }
+
+/* Bản đồ chiếm toàn bộ không gian còn lại */
+#map { flex: 1; }

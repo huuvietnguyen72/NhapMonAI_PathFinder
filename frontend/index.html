@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PathFinder AI — Hà Đông</title>
+  <!-- Leaflet CSS cho bản đồ -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- CSS tùy chỉnh của ứng dụng -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Thanh điều hướng trên cùng -->
+  <nav class="navbar">
+    <span class="brand">PathFinder AI</span>
+    <span class="nav-sub">PTIT · Hà Đông · Hà Nội</span>
+  </nav>
+
+  <div class="layout">
+    <!-- Bảng điều khiển bên trái -->
+    <aside class="panel">
+
+      <!-- Phần chọn điểm bắt đầu -->
+      <div class="panel-section">
+        <span class="label">Điểm Bắt Đầu</span>
+        <div id="start-info" class="coord-display">Nhấp vào bản đồ để chọn...</div>
+      </div>
+
+      <!-- Phần chọn điểm kết thúc -->
+      <div class="panel-section">
+        <span class="label">Điểm Kết Thúc</span>
+        <div id="end-info" class="coord-display">Nhấp vào bản đồ để chọn...</div>
+      </div>
+
+      <!-- Điều chỉnh tốc độ hoạt ảnh -->
+      <div class="panel-section">
+        <span class="label">Tốc Độ Hoạt Ảnh</span>
+        <input id="speed-slider" type="range" min="50" max="500" value="100" step="50" />
+        <div class="slider-labels"><span>Nhanh</span><span>Chậm</span></div>
+      </div>
+
+      <!-- Nút chạy tất cả thuật toán -->
+      <button id="btn-run" class="btn-primary" disabled>&#9654; Chạy Tất Cả Thuật Toán</button>
+      <!-- Nút xóa kết quả và điểm chọn -->
+      <button id="btn-clear" class="btn-secondary">&#10005; Xóa</button>
+
+      <hr class="divider" />
+
+      <span class="label">Kết Quả</span>
+
+      <!-- Thẻ kết quả cho thuật toán BFS -->
+      <div class="stat-card" id="card-bfs">
+        <div class="stat-title bfs-text">BFS</div>
+        <div class="stat-row">Đã duyệt: <span id="bfs-explored">&#8212;</span></div>
+        <div class="stat-row">Độ dài: <span id="bfs-length">&#8212;</span></div>
+        <div class="stat-row">Thời gian: <span id="bfs-time">&#8212;</span></div>
+      </div>
+
+      <!-- Thẻ kết quả cho thuật toán DFS -->
+      <div class="stat-card" id="card-dfs">
+        <div class="stat-title dfs-text">DFS</div>
+        <div class="stat-row">Đã duyệt: <span id="dfs-explored">&#8212;</span></div>
+        <div class="stat-row">Độ dài: <span id="dfs-length">&#8212;</span></div>
+        <div class="stat-row">Thời gian: <span id="dfs-time">&#8212;</span></div>
+      </div>
+
+      <!-- Thẻ kết quả cho thuật toán Dijkstra -->
+      <div class="stat-card" id="card-dijkstra">
+        <div class="stat-title dijkstra-text">Dijkstra</div>
+        <div class="stat-row">Đã duyệt: <span id="dijkstra-explored">&#8212;</span></div>
+        <div class="stat-row">Độ dài: <span id="dijkstra-length">&#8212;</span></div>
+        <div class="stat-row">Thời gian: <span id="dijkstra-time">&#8212;</span></div>
+      </div>
+
+      <!-- Thẻ kết quả cho thuật toán A* -->
+      <div class="stat-card" id="card-astar">
+        <div class="stat-title astar-text">A*</div>
+        <div class="stat-row">Đã duyệt: <span id="astar-explored">&#8212;</span></div>
+        <div class="stat-row">Độ dài: <span id="astar-length">&#8212;</span></div>
+        <div class="stat-row">Thời gian: <span id="astar-time">&#8212;</span></div>
+      </div>
+
+    </aside>
+
+    <!-- Khung bản đồ Leaflet chiếm phần còn lại -->
+    <main id="map"></main>
+  </div>
+
+  <!-- Leaflet JS cho bản đồ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Logic ứng dụng chính -->
+  <script src="app.js"></script>
+</body>
+</html>
