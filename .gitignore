@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# osmnx cache
+cache/
+
+# Superpowers brainstorm session
+.superpowers/
+
+# Môi trường ảo
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
