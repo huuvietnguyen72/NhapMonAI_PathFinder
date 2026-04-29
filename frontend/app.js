@@ -60,3 +60,104 @@ function clearResults() {
   }
   if (animationId) { clearInterval(animationId); animationId = null; }
 }
+
+// ── Tạo marker điểm S/E trên bản đồ ─────────────────────────────────────────
+
+function makeMarker(node, label, color) {
+  // Marker dạng giọt nước với nhãn S hoặc E
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="background:${color};color:#fff;border-radius:50% 50% 50% 0;
+                       width:22px;height:22px;display:flex;align-items:center;
+                       justify-content:center;font-weight:700;font-size:11px;
+                       transform:rotate(-45deg);border:2px solid #fff;">
+             <span style="transform:rotate(45deg)">${label}</span>
+           </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 22],
+  });
+  return L.marker([node.lat, node.lng], { icon });
+}
+
+// ── Xử lý sự kiện click trên bản đồ ─────────────────────────────────────────
+//
+// Máy trạng thái:
+//   0 → click → đặt S → chuyển state 1
+//   1 → click → đặt E → kích hoạt nút Run → chuyển state 2
+//   2 → click → reset về state 0 (sẵn sàng chọn điểm mới)
+
+map.on('click', (e) => {
+  const node = snapToNearestNode(e.latlng.lat, e.latlng.lng);
+  if (!node) return;
+
+  if (state === 0) {
+    // Chọn điểm bắt đầu
+    markerLayer.clearLayers();
+    clearResults();
+    startNode = node;
+    makeMarker(node, 'S', '#e94560').addTo(markerLayer);
+    document.getElementById('start-info').textContent =
+      `${node.lat.toFixed(5)}, ${node.lng.toFixed(5)}`;
+    document.getElementById('end-info').textContent = 'Nhấp vào bản đồ để chọn...';
+    endNode = null;
+    document.getElementById('btn-run').disabled = true;
+    state = 1;
+
+  } else if (state === 1) {
+    // Chọn điểm kết thúc
+    endNode = node;
+    makeMarker(node, 'E', '#06d6a0').addTo(markerLayer);
+    document.getElementById('end-info').textContent =
+      `${node.lat.toFixed(5)}, ${node.lng.toFixed(5)}`;
+    document.getElementById('btn-run').disabled = false;
+    state = 2;
+
+  } else {
+    // Reset — click lần 3 trở đi xóa tất cả
+    state = 0;
+    startNode = null;
+    endNode = null;
+    markerLayer.clearLayers();
+    clearResults();
+    document.getElementById('start-info').textContent = 'Nhấp vào bản đồ để chọn...';
+    document.getElementById('end-info').textContent   = 'Nhấp vào bản đồ để chọn...';
+    document.getElementById('btn-run').disabled = true;
+  }
+});
+
+// ── Nút Xóa ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-clear').addEventListener('click', () => {
+  state = 0;
+  startNode = null;
+  endNode = null;
+  markerLayer.clearLayers();
+  clearResults();
+  document.getElementById('start-info').textContent = 'Nhấp vào bản đồ để chọn...';
+  document.getElementById('end-info').textContent   = 'Nhấp vào bản đồ để chọn...';
+  document.getElementById('btn-run').disabled = true;
+});
+
+// ── Nút Chạy Thuật Toán ───────────────────────────────────────────────────────
+document.getElementById('btn-run').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.textContent = 'Đang chạy...';
+  clearResults();
+
+  try {
+    const res = await fetch('/pathfind', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start_node: startNode.id, end_node: endNode.id }),
+    });
+    if (!res.ok) throw new Error(`Lỗi server: ${res.status}`);
+    const results = await res.json();
+    startAnimation(results); // Hàm này được định nghĩa ở Task 10
+  } catch (err) {
+    console.error('Tìm đường thất bại:', err);
+    alert('Tìm đường thất bại. Kiểm tra console để xem chi tiết.');
+  } finally {
+    btn.textContent = '▶ Chạy Tất Cả Thuật Toán';
+    btn.disabled = false;
+  }
+});
