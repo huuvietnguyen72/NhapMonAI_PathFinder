@@ -127,6 +127,10 @@ class TestAStar:
         assert result["path"] == []
         assert result["length_m"] is None
 
+    def test_explored_bat_dau_tu_start(self, g):
+        result = astar(g, 1, 5)
+        assert result["explored"][0] == 1
+
     def test_co_time_ms(self, g):
         result = astar(g, 1, 5)
         assert isinstance(result["time_ms"], float)

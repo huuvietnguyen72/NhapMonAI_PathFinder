@@ -142,7 +142,7 @@ def dijkstra(graph: Graph, start: int, end: int) -> dict:
                 heapq.heappush(heap, (new_cost, neighbor))
 
     path = reconstruct_path(parent, start, end)
-    length_m = dist.get(end) if path else None
+    length_m = round(dist[end], 2) if path else None
     return _result(explored, path, length_m, t0)
 
 
@@ -182,5 +182,5 @@ def astar(graph: Graph, start: int, end: int) -> dict:
                 heapq.heappush(heap, (new_g + h(neighbor), new_g, neighbor))
 
     path = reconstruct_path(parent, start, end)
-    length_m = g_cost.get(end) if path else None
+    length_m = round(g_cost[end], 2) if path else None
     return _result(explored, path, length_m, t0)
