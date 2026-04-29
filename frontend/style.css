@@ -120,11 +120,13 @@ body {
 /* Đường kẻ ngang phân cách */
 .divider { border: none; border-top: 1px solid var(--bg-light); }
 
-/* Thẻ hiển thị kết quả từng thuật toán */
+/* Thẻ hiển thị kết quả từng thuật toán — click để ẩn/hiện */
 .stat-card {
   background: var(--bg-light);
   border-radius: 6px;
   padding: 8px 10px;
+  cursor: pointer;
+  transition: opacity 0.2s, filter 0.2s;
   border-left: 3px solid;  /* Viền màu trái để phân biệt thuật toán */
 }
 /* Màu viền trái theo từng thuật toán */
@@ -144,6 +146,12 @@ body {
 /* Hàng thống kê (nhãn mờ, giá trị sáng) */
 .stat-row         { color: var(--muted); line-height: 1.7; }
 .stat-row span    { color: var(--text); font-weight: 600; }
+
+/* Thẻ bị ẩn — mờ đi và mất màu */
+.stat-card.hidden { opacity: 0.35; filter: grayscale(60%); }
+
+/* Icon con mắt nhỏ trong tiêu đề thẻ */
+.toggle-eye { font-size: 10px; margin-left: 4px; opacity: 0.6; }
 
 /* Bản đồ chiếm toàn bộ không gian còn lại */
 #map { flex: 1; }

@@ -2,6 +2,8 @@
 const PTIT_CENTER = [20.9731, 105.7789]; // Tọa độ trung tâm khu vực PTIT Hà Đông
 const COLORS = { bfs: '#4ecdc4', dfs: '#ff6b6b', dijkstra: '#ffd166', astar: '#06d6a0' };
 const ALGS = ['bfs', 'dfs', 'dijkstra', 'astar'];
+// Weight giảm dần → khi đường chồng nhau tạo vòng đồng tâm, thấy được cả 4 màu
+const PATH_WEIGHTS = { bfs: 8, dfs: 6, dijkstra: 4, astar: 2 };
 
 // ── Trạng thái ứng dụng ───────────────────────────────────────────────────────
 let graphNodes = [];   // Mảng [{id, lat, lng}] — toàn bộ nút đồ thị
@@ -9,6 +11,7 @@ let state = 0;         // 0=chờ chọn start, 1=chờ chọn end, 2=đã chạ
 let startNode = null;
 let endNode = null;
 let animationId = null; // ID của setInterval hiện tại
+const visibility = { bfs: true, dfs: true, dijkstra: true, astar: true }; // Trạng thái ẩn/hiện từng thuật toán
 
 // ── Khởi tạo bản đồ Leaflet ───────────────────────────────────────────────────
 const map = L.map('map').setView(PTIT_CENTER, 15);
@@ -59,6 +62,13 @@ function clearResults() {
     document.getElementById(`${alg}-time`).textContent     = '—';
   }
   if (animationId) { clearInterval(animationId); animationId = null; }
+  // Reset trạng thái ẩn/hiện và đảm bảo tất cả layer đã được thêm lại vào bản đồ
+  for (const alg of ALGS) {
+    visibility[alg] = true;
+    document.getElementById(`card-${alg}`).classList.remove('hidden');
+    if (!map.hasLayer(exploredLayers[alg])) exploredLayers[alg].addTo(map);
+    if (!map.hasLayer(pathLayers[alg])) pathLayers[alg].addTo(map);
+  }
 }
 
 // ── Tạo marker điểm S/E trên bản đồ ─────────────────────────────────────────
@@ -237,7 +247,7 @@ function drawFinalPaths(results, nodeMap) {
         .map(id => nodeMap[id])
         .filter(Boolean)
         .map(n => [n.lat, n.lng]);
-      L.polyline(latlngs, { color: COLORS[alg], weight: 4, opacity: 0.9 })
+      L.polyline(latlngs, { color: COLORS[alg], weight: PATH_WEIGHTS[alg], opacity: 0.9 })
         .addTo(pathLayers[alg]);
       allLatLngs.push(...latlngs);
     }
@@ -261,4 +271,27 @@ function updateStats(results) {
     document.getElementById(`${alg}-time`).textContent =
       r.time_ms !== null ? `${r.time_ms} ms` : 'N/A';
   }
+}
+
+// ── Ẩn/hiện thuật toán khi click vào thẻ kết quả ────────────────────────────
+
+function toggleAlgorithm(alg) {
+  visibility[alg] = !visibility[alg];
+  const card = document.getElementById(`card-${alg}`);
+  if (visibility[alg]) {
+    // Hiện lại — thêm layer vào bản đồ
+    exploredLayers[alg].addTo(map);
+    pathLayers[alg].addTo(map);
+    card.classList.remove('hidden');
+  } else {
+    // Ẩn đi — gỡ layer khỏi bản đồ
+    exploredLayers[alg].remove();
+    pathLayers[alg].remove();
+    card.classList.add('hidden');
+  }
+}
+
+// Đăng ký click handler cho từng thẻ thuật toán
+for (const alg of ALGS) {
+  document.getElementById(`card-${alg}`).addEventListener('click', () => toggleAlgorithm(alg));
 }
