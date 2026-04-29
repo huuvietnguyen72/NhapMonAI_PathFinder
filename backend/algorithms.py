@@ -111,3 +111,76 @@ def dfs(graph: Graph, start: int, end: int) -> dict:
 
     path = reconstruct_path(parent, start, end)
     return _result(explored, path, compute_length(graph, path), t0)
+
+
+def dijkstra(graph: Graph, start: int, end: int) -> dict:
+    """
+    Thuật toán Dijkstra.
+    Tìm đường đi ngắn nhất theo tổng trọng số (độ dài mét).
+    Dùng hàng đợi ưu tiên (min-heap).
+    """
+    t0 = time.time()
+    heap = [(0.0, start)]
+    dist = {start: 0.0}
+    parent = {start: None}
+    explored = []
+    visited: set[int] = set()
+
+    while heap:
+        cost, node = heapq.heappop(heap)
+        if node in visited:
+            continue
+        visited.add(node)
+        explored.append(node)
+        if node == end:
+            break
+        for neighbor, weight in graph.adjacency.get(node, []):
+            new_cost = cost + weight
+            if neighbor not in dist or new_cost < dist[neighbor]:
+                dist[neighbor] = new_cost
+                parent[neighbor] = node
+                heapq.heappush(heap, (new_cost, neighbor))
+
+    path = reconstruct_path(parent, start, end)
+    length_m = dist.get(end) if path else None
+    return _result(explored, path, length_m, t0)
+
+
+def astar(graph: Graph, start: int, end: int) -> dict:
+    """
+    Thuật toán A* (A-Star).
+    Dijkstra + heuristic khoảng cách đường thẳng Haversine đến đích.
+    Duyệt ít nút hơn Dijkstra nhờ hướng tìm kiếm về phía đích.
+    """
+    t0 = time.time()
+    end_pos = graph.coords[end]
+
+    def h(node: int) -> float:
+        """Heuristic: khoảng cách đường thẳng từ node đến đích (mét)."""
+        return haversine(graph.coords[node], end_pos)
+
+    heap = [(h(start), 0.0, start)]
+    g_cost = {start: 0.0}   # Chi phí thực tế từ start đến mỗi nút
+    parent = {start: None}
+    explored = []
+    visited: set[int] = set()
+
+    while heap:
+        _, g, node = heapq.heappop(heap)
+        if node in visited:
+            continue
+        visited.add(node)
+        explored.append(node)
+        if node == end:
+            break
+        for neighbor, weight in graph.adjacency.get(node, []):
+            new_g = g + weight
+            if neighbor not in g_cost or new_g < g_cost[neighbor]:
+                g_cost[neighbor] = new_g
+                parent[neighbor] = node
+                # f = g (chi phí thực) + h (ước lượng còn lại)
+                heapq.heappush(heap, (new_g + h(neighbor), new_g, neighbor))
+
+    path = reconstruct_path(parent, start, end)
+    length_m = g_cost.get(end) if path else None
+    return _result(explored, path, length_m, t0)

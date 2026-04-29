@@ -1,6 +1,6 @@
 import pytest
 from graph import Graph
-from algorithms import bfs, dfs, reconstruct_path, compute_length
+from algorithms import bfs, dfs, dijkstra, astar, reconstruct_path, compute_length
 
 
 @pytest.fixture
@@ -93,4 +93,40 @@ class TestDFS:
 
     def test_co_time_ms(self, g):
         result = dfs(g, 1, 5)
+        assert isinstance(result["time_ms"], float)
+
+
+class TestDijkstra:
+    def test_tim_duong_ngan_nhat(self, g):
+        result = dijkstra(g, 1, 5)
+        assert result["path"] == [1, 2, 4, 5]
+        assert result["length_m"] == 14.0
+
+    def test_explored_bat_dau_tu_start(self, g):
+        result = dijkstra(g, 1, 5)
+        assert result["explored"][0] == 1
+
+    def test_khong_co_duong_tra_rong(self, g):
+        result = dijkstra(g, 3, 5)
+        assert result["path"] == []
+        assert result["length_m"] is None
+
+    def test_co_time_ms(self, g):
+        result = dijkstra(g, 1, 5)
+        assert isinstance(result["time_ms"], float)
+
+
+class TestAStar:
+    def test_tim_duong_ngan_nhat(self, g):
+        result = astar(g, 1, 5)
+        assert result["path"] == [1, 2, 4, 5]
+        assert result["length_m"] == 14.0
+
+    def test_khong_co_duong_tra_rong(self, g):
+        result = astar(g, 3, 5)
+        assert result["path"] == []
+        assert result["length_m"] is None
+
+    def test_co_time_ms(self, g):
+        result = astar(g, 1, 5)
         assert isinstance(result["time_ms"], float)
