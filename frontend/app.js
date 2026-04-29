@@ -156,6 +156,7 @@ document.getElementById('btn-run').addEventListener('click', async () => {
   } catch (err) {
     console.error('Tìm đường thất bại:', err);
     alert('Tìm đường thất bại. Kiểm tra console để xem chi tiết.');
+    state = 1; // Cho phép chạy lại mà không cần chọn lại điểm
   } finally {
     btn.textContent = '▶ Chạy Tất Cả Thuật Toán';
     btn.disabled = false;
@@ -171,13 +172,14 @@ function startAnimation(results) {
 
   const BATCH = 10;   // Số nút vẽ mỗi tick (mỗi lần setInterval kích hoạt)
   const indices = { bfs: 0, dfs: 0, dijkstra: 0, astar: 0 };
-  let lastSpeed = parseInt(document.getElementById('speed-slider').value);
+  let lastSpeed = parseInt(document.getElementById('speed-slider').value, 10);
 
   function tick() {
     let allDone = true;
 
     // Mỗi tick: vẽ thêm BATCH nút cho từng thuật toán
     for (const alg of ALGS) {
+      if (!results[alg] || !results[alg].explored) continue; // Guard khi server trả thiếu key
       const explored = results[alg].explored;
       const end = Math.min(indices[alg] + BATCH, explored.length);
       for (let i = indices[alg]; i < end; i++) {
@@ -257,6 +259,6 @@ function updateStats(results) {
     document.getElementById(`${alg}-length`).textContent =
       r.length_m !== null ? `${(r.length_m / 1000).toFixed(2)} km` : 'N/A';
     document.getElementById(`${alg}-time`).textContent =
-      `${r.time_ms} ms`;
+      r.time_ms !== null ? `${r.time_ms} ms` : 'N/A';
   }
 }
