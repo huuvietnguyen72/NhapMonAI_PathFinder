@@ -161,3 +161,102 @@ document.getElementById('btn-run').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
+
+// ── Hoạt ảnh tìm kiếm ────────────────────────────────────────────────────────
+
+function startAnimation(results) {
+  // Tạo map tra cứu nhanh: node ID → {lat, lng}
+  const nodeMap = {};
+  for (const node of graphNodes) nodeMap[node.id] = node;
+
+  const BATCH = 10;   // Số nút vẽ mỗi tick (mỗi lần setInterval kích hoạt)
+  const indices = { bfs: 0, dfs: 0, dijkstra: 0, astar: 0 };
+  let lastSpeed = parseInt(document.getElementById('speed-slider').value);
+
+  function tick() {
+    let allDone = true;
+
+    // Mỗi tick: vẽ thêm BATCH nút cho từng thuật toán
+    for (const alg of ALGS) {
+      const explored = results[alg].explored;
+      const end = Math.min(indices[alg] + BATCH, explored.length);
+      for (let i = indices[alg]; i < end; i++) {
+        const node = nodeMap[explored[i]];
+        if (node) {
+          L.circleMarker([node.lat, node.lng], {
+            radius: 3,
+            color: COLORS[alg],
+            fillColor: COLORS[alg],
+            fillOpacity: 0.5,
+            weight: 0,
+          }).addTo(exploredLayers[alg]);
+        }
+      }
+      indices[alg] = end;
+      if (indices[alg] < explored.length) allDone = false;
+    }
+
+    // Khi tất cả thuật toán duyệt xong → vẽ đường đi cuối cùng
+    if (allDone) {
+      clearInterval(animationId);
+      animationId = null;
+      drawFinalPaths(results, nodeMap);
+      updateStats(results);
+      return;
+    }
+
+    // Cập nhật tốc độ động từ thanh kéo
+    const newSpeed = parseInt(document.getElementById('speed-slider').value);
+    if (newSpeed !== lastSpeed) {
+      clearInterval(animationId);
+      lastSpeed = newSpeed;
+      animationId = setInterval(tick, lastSpeed);
+    }
+  }
+
+  animationId = setInterval(tick, lastSpeed);
+}
+
+// ── Vẽ đường đi cuối cùng ────────────────────────────────────────────────────
+
+function drawFinalPaths(results, nodeMap) {
+  const allLatLngs = [];
+
+  for (const alg of ALGS) {
+    // Làm mờ các chấm đã duyệt (giữ lại để so sánh)
+    exploredLayers[alg].eachLayer(layer => {
+      if (layer.setStyle) layer.setStyle({ fillOpacity: 0.15, opacity: 0 });
+    });
+
+    // Vẽ đường đi cuối bằng polyline đậm
+    const path = results[alg].path;
+    if (path.length > 1) {
+      const latlngs = path
+        .map(id => nodeMap[id])
+        .filter(Boolean)
+        .map(n => [n.lat, n.lng]);
+      L.polyline(latlngs, { color: COLORS[alg], weight: 4, opacity: 0.9 })
+        .addTo(pathLayers[alg]);
+      allLatLngs.push(...latlngs);
+    }
+  }
+
+  // Tự động zoom để hiển thị toàn bộ đường đi
+  if (allLatLngs.length > 0) {
+    map.fitBounds(L.latLngBounds(allLatLngs).pad(0.15));
+  }
+}
+
+// ── Cập nhật bảng thống kê ───────────────────────────────────────────────────
+
+function updateStats(results) {
+  for (const alg of ALGS) {
+    const r = results[alg];
+    document.getElementById(`${alg}-explored`).textContent =
+      r.explored.length.toLocaleString('vi-VN');  // Định dạng số kiểu Việt Nam
+    document.getElementById(`${alg}-length`).textContent =
+      r.length_m !== null ? `${(r.length_m / 1000).toFixed(2)} km` : 'N/A';
+    document.getElementById(`${alg}-time`).textContent =
+      `${r.time_ms} ms`;
+  }
+}
