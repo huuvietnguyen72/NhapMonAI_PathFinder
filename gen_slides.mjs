@@ -277,6 +277,73 @@ algoSlide(
   'h(n) ≤ khoảng cách thực  →  Admissible heuristic  →  A* đảm bảo kết quả tối ưu như Dijkstra',
 );
 
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 7 — Giao diện & Tính năng
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '05. Giao Diện và Tính Năng', ACC1);
+  addTitleBar(s, ACC1);
+
+  const features = [
+    ['🖱️ Chọn điểm',       'Click bản đồ, tự snap đến nút giao thông gần nhất.'],
+    ['▶  Chạy đồng thời', 'Bốn thuật toán chạy song song, hoạt ảnh từng bước đồng bộ.'],
+    ['⚙️ Điều chỉnh tốc độ','Thanh kéo 50ms–500ms điều chỉnh tốc độ hoạt ảnh theo thời gian thực.'],
+    ['👁  Toggle ẩn/hiện', 'Click thẻ thống kê để ẩn/hiện đường đi từng thuật toán.'],
+    ['🔄 Concentric Rings', 'BFS 8px · DFS 6px · Dijkstra 4px · A* 2px — thấy cả 4 cùng lúc.'],
+  ];
+
+  features.forEach(([title, desc], i) => {
+    glassCard(s, 0.35, 1.15 + i * 1.2, 6.9, 1.08);
+    txt(s, title, 0.55, 1.18 + i * 1.2, 6.5, 0.42, { fontSize: 15, bold: true, color: ACC2 });
+    txt(s, desc,  0.55, 1.6  + i * 1.2, 6.5, 0.55, { fontSize: 13, color: MUTED, wrap: true });
+  });
+
+  // Bảng màu bên phải
+  glassCard(s, 7.65, 1.15, 5.3, 6.0);
+  txt(s, 'Bảng màu thuật toán', 7.65, 1.2, 5.3, 0.45, { fontSize: 14, bold: true, color: MUTED, align: 'center' });
+
+  [[BFS_C, 'BFS', '8px — ngoài cùng'], [DFS_C, 'DFS', '6px'], [DIJ_C, 'Dijkstra', '4px'], [AST_C, 'A*', '2px — trong cùng']].forEach(([c, name, note], i) => {
+    const y = 1.8 + i * 1.2;
+    glassCard(s, 7.85, y, 4.9, 1.05, c);
+    s.addShape(prs.ShapeType.rect, { x: 7.9, y: y + 0.12, w: 0.16, h: 0.8, fill: { color: c }, line: { color: c } });
+    txt(s, name, 8.22, y + 0.06, 4.3, 0.44, { fontSize: 18, bold: true, color: c });
+    txt(s, note, 8.22, y + 0.54, 4.3, 0.38, { fontSize: 12, color: MUTED });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 8 — Demo giao diện (SLIDE MỚI)
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '06. Demo — Giao Diện Thực Tế', ACC2);
+  addTitleBar(s, ACC2);
+
+  // Placeholder lớn: screenshot bản đồ
+  glassCard(s, 0.35, 1.15, 8.4, 6.0, ACC2);
+  s.addText('🗺️', { x: 0.35, y: 1.15, w: 8.4, h: 3.2, align: 'center', valign: 'middle', fontSize: 56 });
+  txt(s, 'Screenshot bản đồ — hoạt ảnh 4 thuật toán', 0.35, 4.35, 8.4, 0.5, { fontSize: 13, color: MUTED, align: 'center' });
+  // 4 dải màu algo
+  [[BFS_C, 0], [DFS_C, 1], [DIJ_C, 2], [AST_C, 3]].forEach(([c, i]) => {
+    s.addShape(prs.ShapeType.rect, { x: 2.5 + i * 1.1, y: 4.9, w: 0.9, h: 0.18, fill: { color: c }, line: { color: c } });
+  });
+
+  // Placeholder nhỏ trên: bảng thống kê
+  glassCard(s, 9.0, 1.15, 4.0, 2.8, ACC1);
+  s.addText('📊', { x: 9.0, y: 1.15, w: 4.0, h: 1.5, align: 'center', valign: 'middle', fontSize: 36 });
+  txt(s, 'Bảng thống kê so sánh', 9.0, 2.65, 4.0, 0.5, { fontSize: 12, color: MUTED, align: 'center' });
+
+  // Placeholder nhỏ dưới: control panel
+  glassCard(s, 9.0, 4.2, 4.0, 2.95, ACC1);
+  s.addText('⚙️', { x: 9.0, y: 4.2, w: 4.0, h: 1.5, align: 'center', valign: 'middle', fontSize: 36 });
+  txt(s, 'Control panel · điều chỉnh tốc độ', 9.0, 5.7, 4.0, 0.5, { fontSize: 12, color: MUTED, align: 'center' });
+
+  txt(s, '* Thay bằng ảnh chụp màn hình thực tế khi in/xuất file', 0.35, 7.15, 12.6, 0.28, {
+    fontSize: 10, color: MUTED, italic: true, align: 'center',
+  });
+}
+
 prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
   .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
   .catch(err => { console.error(err); process.exit(1); });
