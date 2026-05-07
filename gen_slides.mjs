@@ -156,6 +156,73 @@ function txt(s, text, x, y, w, h, opts = {}) {
   });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 3 — Giới thiệu đề tài
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '01. Giới Thiệu Đề Tài', BFS_C);
+  addTitleBar(s, BFS_C);
+
+  txt(s, 'Bài toán tìm đường là bài toán nền tảng trong Trí tuệ Nhân tạo. PathFinder AI áp dụng 4 thuật toán trực tiếp lên bản đồ đường bộ thực của Hà Đông — không phải đồ thị lý thuyết.', 0.4, 1.1, 12.5, 0.75, {
+    fontSize: 15, color: MUTED, wrap: true,
+  });
+
+  const features = [
+    ['🗺️', 'Bản đồ thực', '1 007 nút giao thông\n2 644 cạnh đường bộ\nHà Đông, Hà Nội'],
+    ['⚡', 'Đồng thời',   'Chạy song song 4 thuật toán\nHoạt ảnh từng bước khám phá'],
+    ['📊', 'So sánh',     'Số nút duyệt · Độ dài đường\nThời gian thực thi'],
+    ['🎛️', 'Tương tác',  'Click chọn điểm · Điều chỉnh tốc độ\nẨn/hiện từng thuật toán'],
+  ];
+
+  features.forEach(([icon, title, desc], i) => {
+    const x = 0.4 + i * 3.15;
+    glassCard(s, x, 2.05, 3.0, 5.1);
+    s.addText(icon, { x, y: 2.2, w: 3.0, h: 0.9, align: 'center', fontSize: 38 });
+    txt(s, title, x, 3.2, 3.0, 0.5, { fontSize: 15, bold: true, color: ACC2, align: 'center' });
+    txt(s, desc,  x, 3.75, 3.0, 3.2, { fontSize: 13, color: MUTED, align: 'center', wrap: true });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 4 — Kiến trúc hệ thống
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '02. Kiến Trúc Hệ Thống', DIJ_C);
+  addTitleBar(s, DIJ_C);
+
+  // Cột Frontend
+  glassCard(s, 0.3, 1.15, 3.7, 5.9, BFS_C);
+  txt(s, 'FRONTEND', 0.3, 1.15, 3.7, 0.55, { fontSize: 15, bold: true, color: BFS_C, align: 'center', valign: 'middle' });
+  ['Vanilla JS', 'Leaflet.js 1.9.4', 'HTML / CSS', 'Dark theme UI', 'Hoạt ảnh đồng bộ'].forEach((t, i) => {
+    txt(s, t, 0.5, 1.85 + i * 0.88, 3.3, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+
+  // Mũi tên REST API
+  s.addShape(prs.ShapeType.rightArrow, { x: 4.15, y: 3.7, w: 1.0, h: 0.5, fill: { color: ACC2 }, line: { color: ACC2 } });
+  txt(s, 'REST', 4.15, 4.25, 1.0, 0.3, { fontSize: 10, color: ACC2, align: 'center' });
+  s.addShape(prs.ShapeType.leftArrow,  { x: 4.15, y: 3.1, w: 1.0, h: 0.5, fill: { color: MUTED }, line: { color: MUTED } });
+  txt(s, 'JSON', 4.15, 2.75, 1.0, 0.3, { fontSize: 10, color: MUTED, align: 'center' });
+
+  // Cột Backend
+  glassCard(s, 5.3, 1.15, 3.7, 5.9, DIJ_C);
+  txt(s, 'BACKEND', 5.3, 1.15, 3.7, 0.55, { fontSize: 15, bold: true, color: DIJ_C, align: 'center', valign: 'middle' });
+  ['Python 3.x', 'FastAPI', 'uvicorn', 'BFS / DFS', 'Dijkstra / A*'].forEach((t, i) => {
+    txt(s, t, 5.5, 1.85 + i * 0.88, 3.3, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+
+  // Mũi tên Data
+  s.addShape(prs.ShapeType.rightArrow, { x: 9.15, y: 3.9, w: 0.7, h: 0.45, fill: { color: AST_C }, line: { color: AST_C } });
+
+  // Cột Data
+  glassCard(s, 9.95, 1.15, 3.05, 5.9, AST_C);
+  txt(s, 'DỮ LIỆU', 9.95, 1.15, 3.05, 0.55, { fontSize: 15, bold: true, color: AST_C, align: 'center', valign: 'middle' });
+  ['nodes.json', '1 007 nút', 'edges.json', '2 644 cạnh', 'osmnx export'].forEach((t, i) => {
+    txt(s, t, 9.95, 1.85 + i * 0.88, 3.05, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+}
+
 prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
   .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
   .catch(err => { console.error(err); process.exit(1); });
