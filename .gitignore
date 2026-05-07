@@ -24,8 +24,9 @@ node_modules/
 package-lock.json
 package.json
 
-# PPTX generated files
+# Office generated files
 *.pptx
+*.docx
 
 # Windows Office lock files
 ~$*
