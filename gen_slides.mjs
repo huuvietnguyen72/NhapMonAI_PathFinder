@@ -344,6 +344,101 @@ algoSlide(
   });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 9 — Kết quả so sánh
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '07. Kết Quả So Sánh', ACC2);
+  addTitleBar(s, ACC2);
+  txt(s, 'PTIT → Vincom Hà Đông (~3km) — kết quả điển hình', 0.4, 1.05, 12.5, 0.35, { fontSize: 12, color: MUTED, italic: true });
+
+  // ── Bảng ~55% bên trái ──────────────────────────────────────────────────
+  const tX = 0.35, tY = 1.5, colW = [2.2, 1.8, 1.9, 1.9], rowH = 0.7;
+  const headers = ['Thuật toán', 'Nút duyệt', 'Độ dài', 'Thời gian'];
+  const rows = [
+    ['● BFS',      '~180', '~2 400m', '~18ms', BFS_C],
+    ['● DFS',      '~320', '~4 100m', '~22ms', DFS_C],
+    ['● Dijkstra', '~220', '~2 100m', '~14ms', DIJ_C],
+    ['● A*',       '~95',  '~2 100m', '~8ms',  AST_C],
+  ];
+
+  // Header row
+  headers.forEach((h, ci) => {
+    const x = tX + colW.slice(0, ci).reduce((a, b) => a + b, 0);
+    s.addShape(prs.ShapeType.rect, { x, y: tY, w: colW[ci], h: rowH, fill: { color: BG2 }, line: { color: GLASBD } });
+    txt(s, h, x, tY, colW[ci], rowH, { fontSize: 13, bold: true, color: LAVNDR, align: 'center', valign: 'middle' });
+  });
+
+  // Data rows
+  rows.forEach(([alg, nodes, dist, time, c], ri) => {
+    [alg, nodes, dist, time].forEach((val, ci) => {
+      const x = tX + colW.slice(0, ci).reduce((a, b) => a + b, 0);
+      const y = tY + (ri + 1) * rowH;
+      s.addShape(prs.ShapeType.rect, { x, y, w: colW[ci], h: rowH, fill: { color: ri % 2 === 0 ? BG2 : GLASS }, line: { color: GLASBD } });
+      txt(s, val, x, y, colW[ci], rowH, {
+        fontSize: 14, bold: ci === 0,
+        color: ci === 0 ? c : WHITE,
+        align: ci === 0 ? 'left' : 'center', valign: 'middle',
+      });
+    });
+  });
+
+  // ── Nhận xét bên phải ───────────────────────────────────────────────────
+  const notes = [
+    [AST_C,  '🏆 A* — Hiệu quả nhất',       'Duyệt ít nút nhất (~95) nhờ heuristic. Nhanh gấp ~1.75× Dijkstra, cùng độ dài tối ưu.'],
+    [DIJ_C,  '✓ Dijkstra — Tối ưu đảm bảo', 'Đường ngắn nhất tuyệt đối. Chậm hơn A* vì không có định hướng.'],
+    [BFS_C,  '≈ BFS — Ít bước nhất',         'Tìm đường ít cạnh nhất, không tính trọng số. Dài hơn ~14% so với Dijkstra.'],
+    [DFS_C,  '✗ DFS — Kém nhất',             'Duyệt nhiều nút nhất, đường dài nhất (~4 100m). Không phù hợp tìm đường tối ưu.'],
+  ];
+
+  const nX = 8.0, nY = 1.5, nW = 5.0, nH = 1.4;
+  notes.forEach(([c, title, desc], i) => {
+    const y = nY + i * (nH + 0.1);
+    glassCard(s, nX, y, nW, nH, c);
+    txt(s, title, nX + 0.15, y + 0.1, nW - 0.2, 0.45, { fontSize: 13, bold: true, color: c });
+    txt(s, desc,  nX + 0.15, y + 0.55, nW - 0.2, 0.72, { fontSize: 11.5, color: MUTED, wrap: true });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 10 — Kiểm thử
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '08. Kiểm Thử', LAVNDR);
+  addTitleBar(s, LAVNDR);
+
+  // 4 stat cards
+  [['34', 'Unit Tests', BFS_C], ['100%', 'Pass Rate', AST_C], ['< 5s', 'Thời gian chạy', DIJ_C], ['TDD', 'Phương pháp', ACC1]].forEach(([val, label, c], i) => {
+    const x = 0.35 + i * 3.15;
+    glassCard(s, x, 1.15, 3.0, 2.1, c);
+    txt(s, val, x, 1.25, 3.0, 1.1, { fontSize: 38, bold: true, color: c, align: 'center', valign: 'middle' });
+    txt(s, label, x, 2.4, 3.0, 0.6, { fontSize: 14, color: MUTED, align: 'center', valign: 'middle' });
+  });
+
+  // Phạm vi kiểm thử
+  txt(s, 'Phạm vi kiểm thử:', 0.35, 3.5, 12.5, 0.45, { fontSize: 16, bold: true, color: WHITE });
+
+  const scope = [
+    ['Graph module', 'Nạp đúng 1 007 nút, 2 644 cạnh từ JSON'],
+    ['BFS / DFS',    'Trả về explored list và path hợp lệ'],
+    ['Dijkstra / A*','Khoảng cách tối ưu, length_m chính xác'],
+    ['API /nodes',   'Đúng định dạng, đủ số lượng'],
+    ['API /pathfind','Đúng 4 thuật toán, xử lý input sai'],
+    ['Edge cases',   'start==end, không có đường, node không tồn tại'],
+  ];
+
+  scope.forEach(([title, desc], i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = 0.35 + col * 6.4;
+    const y = 4.05 + row * 0.9;
+    glassCard(s, x, y, 6.15, 0.8);
+    txt(s, '✔  ' + title + ':', x + 0.15, y, 2.2, 0.8, { fontSize: 13, bold: true, color: AST_C, valign: 'middle' });
+    txt(s, desc, x + 2.3, y, 3.7, 0.8, { fontSize: 12, color: WHITE, valign: 'middle' });
+  });
+}
+
 prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
   .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
   .catch(err => { console.error(err); process.exit(1); });
