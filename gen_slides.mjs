@@ -55,6 +55,36 @@ function txt(s, text, x, y, w, h, opts = {}) {
   });
 }
 
+// ─── Helper: slide thuật toán 2 cột ──────────────────────────────────────────
+function algoSlide(titleText, titleColor,
+  leftName, leftColor, leftBullets,
+  rightName, rightColor, rightBullets,
+  footerNote) {
+  const s = newSlide();
+  addTitle(s, titleText, titleColor);
+  addTitleBar(s, titleColor);
+
+  [[leftName, leftColor, leftBullets, 0.35], [rightName, rightColor, rightBullets, 7.0]].forEach(([name, c, bullets, x]) => {
+    glassCard(s, x, 1.15, 5.95, 5.9, c);
+    // Header màu
+    s.addShape(prs.ShapeType.roundRect, { x, y: 1.15, w: 5.95, h: 0.6, rectRadius: 0.08, fill: { color: c, transparency: 75 }, line: { color: c } });
+    txt(s, name, x, 1.15, 5.95, 0.6, { fontSize: 17, bold: true, color: c, align: 'center', valign: 'middle' });
+    bullets.forEach((b, i) => {
+      txt(s, '•  ' + b, x + 0.25, 1.95 + i * 0.78, 5.45, 0.65, { fontSize: 15, color: WHITE });
+    });
+  });
+
+  // VS
+  txt(s, 'VS', 6.24, 3.8, 0.85, 0.65, { fontSize: 22, bold: true, color: ACC1, align: 'center', valign: 'middle' });
+
+  // Footer
+  if (footerNote) {
+    s.addShape(prs.ShapeType.roundRect, { x: 0.35, y: 7.05, w: 12.6, h: 0.33, rectRadius: 0.05, fill: { color: GLASS }, line: { color: GLASBD } });
+    txt(s, footerNote, 0.5, 7.05, 12.3, 0.33, { fontSize: 11, color: MUTED, italic: true, valign: 'middle' });
+  }
+  return s;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // SLIDE 1 — Trang bìa
 // ════════════════════════════════════════════════════════════════════════════
@@ -222,6 +252,30 @@ function txt(s, text, x, y, w, h, opts = {}) {
     txt(s, t, 9.95, 1.85 + i * 0.88, 3.05, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
   });
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 5 — BFS & DFS
+// ════════════════════════════════════════════════════════════════════════════
+algoSlide(
+  '03. Thuật Toán — BFS & DFS', BFS_C,
+  'BFS  Breadth-First Search', BFS_C,
+  ['Duyệt theo chiều rộng', 'Hàng đợi (Queue)', 'Tìm đường ÍT BƯỚC nhất', 'Không tối ưu khoảng cách thực', 'Độ phức tạp: O(V + E)'],
+  'DFS  Depth-First Search', DFS_C,
+  ['Duyệt theo chiều sâu', 'Ngăn xếp (Stack)', 'KHÔNG đảm bảo tối ưu', 'Đường đi có thể rất dài', 'Độ phức tạp: O(V + E)'],
+  'BFS đảm bảo đường ÍT CẠNH nhất · DFS nhanh hơn trong nhiều trường hợp nhưng không tối ưu trên bản đồ có trọng số',
+);
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 6 — Dijkstra & A*
+// ════════════════════════════════════════════════════════════════════════════
+algoSlide(
+  '04. Thuật Toán — Dijkstra & A*', AST_C,
+  'Dijkstra', DIJ_C,
+  ['Tìm đường NGẮN NHẤT tuyệt đối', 'Min-heap (priority queue)', 'Mở rộng nút gần nguồn nhất', 'Tối ưu trên đồ thị trọng số ≥ 0', 'Độ phức tạp: O((V+E) log V)'],
+  'A*  (A-Star)', AST_C,
+  ['Dijkstra + heuristic dẫn hướng', 'f(n) = g(n) + h(n)', 'h(n) = khoảng cách Haversine', 'Tối ưu VÀ nhanh hơn Dijkstra', 'Duyệt ít nút hơn đáng kể'],
+  'h(n) ≤ khoảng cách thực  →  Admissible heuristic  →  A* đảm bảo kết quả tối ưu như Dijkstra',
+);
 
 prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
   .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
