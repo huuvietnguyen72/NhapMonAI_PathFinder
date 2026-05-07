@@ -1,0 +1,777 @@
+# Slide Redesign — PathFinder AI Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Viết lại `gen_slides.mjs` để xuất `ThuyetTrinh_PathFinderAI.pptx` gồm 13 slide theo theme Bold Gradient, thêm slide Demo và Tài liệu tham khảo, đổi thứ tự Kiến trúc lên vị trí 4.
+
+**Architecture:** File duy nhất `gen_slides.mjs` dùng `pptxgenjs`. Xây từng slide theo thứ tự, mỗi nhóm slide là một task. Helper functions dùng chung (newSlide, addTitle, addTitleBar, glassCard, txt) được định nghĩa ở Task 1. Không có tests tự động — kiểm tra bằng `node gen_slides.mjs` và mở file PPTX.
+
+**Tech Stack:** Node.js, pptxgenjs (`npm install pptxgenjs` nếu chưa có)
+
+---
+
+## File Structure
+
+| File | Thay đổi |
+|---|---|
+| `gen_slides.mjs` | Viết lại hoàn toàn |
+| `ThuyetTrinh_PathFinderAI.pptx` | Output — tự sinh khi chạy script |
+
+---
+
+## Task 1: Scaffolding — theme constants, helpers, save call
+
+**Files:**
+- Overwrite: `gen_slides.mjs`
+
+Viết lại toàn bộ file với phần setup, hằng số màu, 5 helper functions, và lời gọi `writeFile` cuối. Chưa có slide nào — chỉ để xác nhận script chạy được.
+
+> **Lưu ý pptxgenjs:**
+> - `fill.transparency`: 0 = đục, 100 = trong suốt. `rgba(255,255,255,0.06)` → `{ color: 'FFFFFF', transparency: 94 }`
+> - `line.color` không hỗ trợ transparency → dùng hex xấp xỉ: `'363780'` cho `rgba(129,140,248,0.25)` trên nền `#1e1b4b`
+> - Gradient text không khả thi → dùng màu solid `'a5b4fc'` (lavender)
+> - `prs.ShapeType.rect` dùng cho hình chữ nhật đơn giản
+
+- [ ] **Bước 1: Viết lại gen_slides.mjs với scaffolding**
+
+```javascript
+import PptxGenJS from 'pptxgenjs';
+
+const prs = new PptxGenJS();
+prs.layout = 'LAYOUT_WIDE'; // 13.33 × 7.5 inches
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
+const BG1    = '0f0c29';  // nền tối nhất
+const BG2    = '1e1b4b';  // nền giữa
+const BG3    = '312e81';  // nền sáng nhất
+const GLASS  = '1c1945';  // glass card fill (~rgba(255,255,255,0.06) trên BG2)
+const GLASBD = '363780';  // glass card border (~rgba(129,140,248,0.25) trên BG2)
+const ACC1   = '818cf8';  // accent tím
+const ACC2   = '34d399';  // accent xanh
+const WHITE  = 'e0e7ff';  // text chính
+const MUTED  = '6b7ab8';  // text muted
+const LAVNDR = 'a5b4fc';  // lavender (thay gradient text)
+const BFS_C  = '4ecdc4';
+const DFS_C  = 'ff6b6b';
+const DIJ_C  = 'ffd166';
+const AST_C  = '06d6a0';
+
+// ─── Helper: tạo slide mới với nền gradient mô phỏng ─────────────────────────
+function newSlide() {
+  const s = prs.addSlide();
+  // Lớp nền: 3 rect xếp chồng mô phỏng gradient tím → xanh đậm
+  s.addShape(prs.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 7.5, fill: { color: BG1 }, line: { color: BG1 } });
+  s.addShape(prs.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 4.5, fill: { color: BG2, transparency: 30 }, line: { color: BG2, transparency: 30 } });
+  s.addShape(prs.ShapeType.rect, { x: 6, y: 0, w: 7.33, h: 7.5, fill: { color: BG3, transparency: 50 }, line: { color: BG3, transparency: 50 } });
+  // Thanh accent dọc trái: nửa trên tím, nửa dưới xanh
+  s.addShape(prs.ShapeType.rect, { x: 0, y: 0,    w: 0.06, h: 3.75, fill: { color: ACC1 }, line: { color: ACC1 } });
+  s.addShape(prs.ShapeType.rect, { x: 0, y: 3.75, w: 0.06, h: 3.75, fill: { color: ACC2 }, line: { color: ACC2 } });
+  return s;
+}
+
+// ─── Helper: tiêu đề slide ────────────────────────────────────────────────────
+function addTitle(s, text, color = WHITE) {
+  s.addText(text, {
+    x: 0.4, y: 0.3, w: 12.5, h: 0.6,
+    fontSize: 26, bold: true, color, fontFace: 'Calibri', align: 'left',
+  });
+}
+
+// ─── Helper: gạch dưới tiêu đề ───────────────────────────────────────────────
+function addTitleBar(s, color = ACC1) {
+  s.addShape(prs.ShapeType.rect, { x: 0.4, y: 0.95, w: 12.5, h: 0.03, fill: { color }, line: { color } });
+}
+
+// ─── Helper: glass card (roundRect) ──────────────────────────────────────────
+function glassCard(s, x, y, w, h, borderColor = GLASBD) {
+  s.addShape(prs.ShapeType.roundRect, {
+    x, y, w, h, rectRadius: 0.08,
+    fill: { color: GLASS },
+    line: { color: borderColor, width: 1.2 },
+  });
+}
+
+// ─── Helper: text box ngắn gọn ────────────────────────────────────────────────
+function txt(s, text, x, y, w, h, opts = {}) {
+  s.addText(text, {
+    x, y, w, h, fontFace: 'Calibri', color: WHITE, fontSize: 16,
+    ...opts,
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDES sẽ được thêm vào đây ở các task tiếp theo
+// ════════════════════════════════════════════════════════════════════════════
+
+// ─── Save ─────────────────────────────────────────────────────────────────────
+prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
+  .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
+  .catch(err => { console.error(err); process.exit(1); });
+```
+
+- [ ] **Bước 2: Kiểm tra script chạy được**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: `OK: ThuyetTrinh_PathFinderAI.pptx` — file PPTX trống (0 slide) được tạo, không lỗi.
+
+- [ ] **Bước 3: Commit**
+
+```bash
+git add gen_slides.mjs
+git commit -m "feat: scaffolding theme constants và helpers cho slide redesign"
+```
+
+---
+
+## Task 2: Slide 1 — Trang bìa + Slide 2 — Mục lục
+
+**Files:**
+- Modify: `gen_slides.mjs` — thêm 2 slide trước dòng `// ─── Save`
+
+- [ ] **Bước 1: Thêm Slide 1 (Bìa)**
+
+Thêm đoạn sau vào trước dòng `// ─── Save`:
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 1 — Trang bìa
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+
+  // Glow tím góc phải trên
+  s.addShape(prs.ShapeType.ellipse, {
+    x: 9.5, y: -1.2, w: 5, h: 5,
+    fill: { color: ACC1, transparency: 82 }, line: { color: ACC1, transparency: 82 },
+  });
+  // Glow xanh góc trái dưới
+  s.addShape(prs.ShapeType.ellipse, {
+    x: -1, y: 4.5, w: 4, h: 4,
+    fill: { color: ACC2, transparency: 85 }, line: { color: ACC2, transparency: 85 },
+  });
+
+  // Icon card bên trái
+  glassCard(s, 0.8, 1.8, 3.0, 3.0, ACC1);
+  s.addText('🗺️', { x: 0.8, y: 1.8, w: 3.0, h: 3.0, align: 'center', valign: 'middle', fontSize: 72 });
+
+  // Tag
+  s.addShape(prs.ShapeType.roundRect, {
+    x: 4.3, y: 1.85, w: 3.2, h: 0.38, rectRadius: 0.15,
+    fill: { color: ACC1, transparency: 85 }, line: { color: ACC1, transparency: 50 },
+  });
+  txt(s, 'Đồ án  ·  Nhập Môn TTNT', 4.3, 1.85, 3.2, 0.38, {
+    fontSize: 11, color: LAVNDR, align: 'center', valign: 'middle', bold: true,
+  });
+
+  // Title
+  txt(s, 'PathFinder AI', 4.3, 2.45, 8.7, 1.1, {
+    fontSize: 52, bold: true, color: LAVNDR,
+  });
+
+  // Subtitle
+  txt(s, 'Trực Quan Hóa Thuật Toán Tìm Đường', 4.3, 3.55, 8.7, 0.55, {
+    fontSize: 22, bold: true, color: WHITE,
+  });
+  txt(s, 'trên Bản Đồ Thực Hà Đông, Hà Nội', 4.3, 4.08, 8.7, 0.45, {
+    fontSize: 17, color: MUTED,
+  });
+
+  // Gạch ngăn
+  s.addShape(prs.ShapeType.rect, { x: 4.3, y: 4.65, w: 8.7, h: 0.03, fill: { color: GLASBD }, line: { color: GLASBD } });
+
+  // 4 algo chips
+  const chips = [['BFS', BFS_C], ['DFS', DFS_C], ['Dijkstra', DIJ_C], ['A*', AST_C]];
+  chips.forEach(([name, c], i) => {
+    const cx = 4.3 + i * 1.85;
+    s.addShape(prs.ShapeType.roundRect, {
+      x: cx, y: 4.85, w: 1.65, h: 0.38, rectRadius: 0.05,
+      fill: { color: c, transparency: 82 }, line: { color: c, transparency: 50 },
+    });
+    txt(s, name, cx, 4.85, 1.65, 0.38, { fontSize: 12, bold: true, color: c, align: 'center', valign: 'middle' });
+  });
+
+  // Meta
+  txt(s, 'Học viện Công nghệ Bưu chính Viễn thông (PTIT)', 4.3, 5.55, 8.7, 0.4, { fontSize: 14, color: MUTED });
+  txt(s, 'Hà Nội – 2025', 4.3, 5.95, 8.7, 0.35, { fontSize: 13, color: MUTED, italic: true });
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 2 (Mục lục)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 2 — Mục lục
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, 'Nội Dung Trình Bày', LAVNDR);
+  addTitleBar(s, ACC1);
+
+  const items = [
+    ['01', 'Giới thiệu đề tài',    BFS_C],
+    ['02', 'Kiến trúc hệ thống',   DIJ_C],
+    ['03', 'Thuật toán BFS & DFS', DFS_C],
+    ['04', 'Thuật toán Dijkstra & A*', AST_C],
+    ['05', 'Giao diện & Demo',     ACC1],
+    ['06', 'Kết quả so sánh',      ACC2],
+    ['07', 'Kiểm thử & Kết luận',  MUTED],
+  ];
+
+  const cardW = 5.8, cardH = 0.68, gapX = 0.8, gapY = 0.15, startX = 0.5, startY = 1.15;
+
+  items.forEach(([num, title, color], i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = startX + col * (cardW + gapX);
+    const y = startY + row * (cardH + gapY);
+    glassCard(s, x, y, cardW, cardH, color);
+    // Số badge
+    s.addShape(prs.ShapeType.roundRect, {
+      x: x + 0.06, y: y + 0.07, w: 0.54, h: cardH - 0.14, rectRadius: 0.05,
+      fill: { color }, line: { color },
+    });
+    txt(s, num, x + 0.06, y + 0.07, 0.54, cardH - 0.14, {
+      fontSize: 17, bold: true, color: BG1, align: 'center', valign: 'middle',
+    });
+    txt(s, title, x + 0.72, y, cardW - 0.78, cardH, {
+      fontSize: 16, color: WHITE, valign: 'middle',
+    });
+  });
+}
+```
+
+- [ ] **Bước 3: Chạy kiểm tra**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: `OK: ThuyetTrinh_PathFinderAI.pptx` — mở file, thấy 2 slide.
+
+- [ ] **Bước 4: Commit**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 1 trang bìa Bold Gradient và slide 2 mục lục"
+```
+
+---
+
+## Task 3: Slide 3 — Giới thiệu + Slide 4 — Kiến trúc
+
+**Files:**
+- Modify: `gen_slides.mjs`
+
+- [ ] **Bước 1: Thêm Slide 3 (Giới thiệu)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 3 — Giới thiệu đề tài
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '01. Giới Thiệu Đề Tài', BFS_C);
+  addTitleBar(s, BFS_C);
+
+  txt(s, 'Bài toán tìm đường là bài toán nền tảng trong Trí tuệ Nhân tạo. PathFinder AI áp dụng 4 thuật toán trực tiếp lên bản đồ đường bộ thực của Hà Đông — không phải đồ thị lý thuyết.', 0.4, 1.1, 12.5, 0.75, {
+    fontSize: 15, color: MUTED, wrap: true,
+  });
+
+  const features = [
+    ['🗺️', 'Bản đồ thực', '1 007 nút giao thông\n2 644 cạnh đường bộ\nHà Đông, Hà Nội'],
+    ['⚡', 'Đồng thời',   'Chạy song song 4 thuật toán\nHoạt ảnh từng bước khám phá'],
+    ['📊', 'So sánh',     'Số nút duyệt · Độ dài đường\nThời gian thực thi'],
+    ['🎛️', 'Tương tác',  'Click chọn điểm · Điều chỉnh tốc độ\nẨn/hiện từng thuật toán'],
+  ];
+
+  features.forEach(([icon, title, desc], i) => {
+    const x = 0.4 + i * 3.15;
+    glassCard(s, x, 2.05, 3.0, 5.1);
+    s.addText(icon, { x, y: 2.2, w: 3.0, h: 0.9, align: 'center', fontSize: 38 });
+    txt(s, title, x, 3.2, 3.0, 0.5, { fontSize: 15, bold: true, color: ACC2, align: 'center' });
+    txt(s, desc,  x, 3.75, 3.0, 3.2, { fontSize: 13, color: MUTED, align: 'center', wrap: true });
+  });
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 4 (Kiến trúc)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 4 — Kiến trúc hệ thống
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '02. Kiến Trúc Hệ Thống', DIJ_C);
+  addTitleBar(s, DIJ_C);
+
+  // Cột Frontend
+  glassCard(s, 0.3, 1.15, 3.7, 5.9, BFS_C);
+  txt(s, 'FRONTEND', 0.3, 1.15, 3.7, 0.55, { fontSize: 15, bold: true, color: BFS_C, align: 'center', valign: 'middle' });
+  ['Vanilla JS', 'Leaflet.js 1.9.4', 'HTML / CSS', 'Dark theme UI', 'Hoạt ảnh đồng bộ'].forEach((t, i) => {
+    txt(s, t, 0.5, 1.85 + i * 0.88, 3.3, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+
+  // Mũi tên REST API
+  s.addShape(prs.ShapeType.rightArrow, { x: 4.15, y: 3.7, w: 1.0, h: 0.5, fill: { color: ACC2 }, line: { color: ACC2 } });
+  txt(s, 'REST', 4.15, 4.25, 1.0, 0.3, { fontSize: 10, color: ACC2, align: 'center' });
+  s.addShape(prs.ShapeType.leftArrow,  { x: 4.15, y: 3.1, w: 1.0, h: 0.5, fill: { color: MUTED }, line: { color: MUTED } });
+  txt(s, 'JSON', 4.15, 2.75, 1.0, 0.3, { fontSize: 10, color: MUTED, align: 'center' });
+
+  // Cột Backend
+  glassCard(s, 5.3, 1.15, 3.7, 5.9, DIJ_C);
+  txt(s, 'BACKEND', 5.3, 1.15, 3.7, 0.55, { fontSize: 15, bold: true, color: DIJ_C, align: 'center', valign: 'middle' });
+  ['Python 3.x', 'FastAPI', 'uvicorn', 'BFS / DFS', 'Dijkstra / A*'].forEach((t, i) => {
+    txt(s, t, 5.5, 1.85 + i * 0.88, 3.3, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+
+  // Mũi tên Data
+  s.addShape(prs.ShapeType.rightArrow, { x: 9.15, y: 3.9, w: 0.7, h: 0.45, fill: { color: AST_C }, line: { color: AST_C } });
+
+  // Cột Data
+  glassCard(s, 9.95, 1.15, 3.05, 5.9, AST_C);
+  txt(s, 'DỮ LIỆU', 9.95, 1.15, 3.05, 0.55, { fontSize: 15, bold: true, color: AST_C, align: 'center', valign: 'middle' });
+  ['nodes.json', '1 007 nút', 'edges.json', '2 644 cạnh', 'osmnx export'].forEach((t, i) => {
+    txt(s, t, 9.95, 1.85 + i * 0.88, 3.05, 0.72, { fontSize: 14, color: WHITE, align: 'center', valign: 'middle' });
+  });
+}
+```
+
+- [ ] **Bước 3: Chạy kiểm tra**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: 4 slide trong file PPTX.
+
+- [ ] **Bước 4: Commit**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 3 giới thiệu, slide 4 kiến trúc hệ thống"
+```
+
+---
+
+## Task 4: Slide 5 — BFS & DFS + Slide 6 — Dijkstra & A*
+
+**Files:**
+- Modify: `gen_slides.mjs`
+
+- [ ] **Bước 1: Thêm helper algoSlide (dùng chung cho cả 2 slide)**
+
+Thêm function này vào ngay sau phần helpers (trước comment `// SLIDES sẽ được thêm vào đây`):
+
+```javascript
+// ─── Helper: slide thuật toán 2 cột ──────────────────────────────────────────
+function algoSlide(titleText, titleColor,
+  leftName, leftColor, leftBullets,
+  rightName, rightColor, rightBullets,
+  footerNote) {
+  const s = newSlide();
+  addTitle(s, titleText, titleColor);
+  addTitleBar(s, titleColor);
+
+  [[leftName, leftColor, leftBullets, 0.35], [rightName, rightColor, rightBullets, 7.0]].forEach(([name, c, bullets, x]) => {
+    glassCard(s, x, 1.15, 5.95, 5.9, c);
+    // Header màu
+    s.addShape(prs.ShapeType.roundRect, { x, y: 1.15, w: 5.95, h: 0.6, rectRadius: 0.08, fill: { color: c, transparency: 75 }, line: { color: c } });
+    txt(s, name, x, 1.15, 5.95, 0.6, { fontSize: 17, bold: true, color: c, align: 'center', valign: 'middle' });
+    bullets.forEach((b, i) => {
+      txt(s, '•  ' + b, x + 0.25, 1.95 + i * 0.78, 5.45, 0.65, { fontSize: 15, color: WHITE });
+    });
+  });
+
+  // VS
+  txt(s, 'VS', 6.24, 3.8, 0.85, 0.65, { fontSize: 22, bold: true, color: ACC1, align: 'center', valign: 'middle' });
+
+  // Footer
+  if (footerNote) {
+    s.addShape(prs.ShapeType.roundRect, { x: 0.35, y: 7.05, w: 12.6, h: 0.33, rectRadius: 0.05, fill: { color: GLASS }, line: { color: GLASBD } });
+    txt(s, footerNote, 0.5, 7.05, 12.3, 0.33, { fontSize: 11, color: MUTED, italic: true, valign: 'middle' });
+  }
+  return s;
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 5 (BFS & DFS)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 5 — BFS & DFS
+// ════════════════════════════════════════════════════════════════════════════
+algoSlide(
+  '03. Thuật Toán — BFS & DFS', BFS_C,
+  'BFS  Breadth-First Search', BFS_C,
+  ['Duyệt theo chiều rộng', 'Hàng đợi (Queue)', 'Tìm đường ÍT BƯỚC nhất', 'Không tối ưu khoảng cách thực', 'Độ phức tạp: O(V + E)'],
+  'DFS  Depth-First Search', DFS_C,
+  ['Duyệt theo chiều sâu', 'Ngăn xếp (Stack)', 'KHÔNG đảm bảo tối ưu', 'Đường đi có thể rất dài', 'Độ phức tạp: O(V + E)'],
+  'BFS đảm bảo đường ÍT CẠNH nhất · DFS nhanh hơn trong nhiều trường hợp nhưng không tối ưu trên bản đồ có trọng số',
+);
+```
+
+- [ ] **Bước 3: Thêm Slide 6 (Dijkstra & A*)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 6 — Dijkstra & A*
+// ════════════════════════════════════════════════════════════════════════════
+algoSlide(
+  '04. Thuật Toán — Dijkstra & A*', AST_C,
+  'Dijkstra', DIJ_C,
+  ['Tìm đường NGẮN NHẤT tuyệt đối', 'Min-heap (priority queue)', 'Mở rộng nút gần nguồn nhất', 'Tối ưu trên đồ thị trọng số ≥ 0', 'Độ phức tạp: O((V+E) log V)'],
+  'A*  (A-Star)', AST_C,
+  ['Dijkstra + heuristic dẫn hướng', 'f(n) = g(n) + h(n)', 'h(n) = khoảng cách Haversine', 'Tối ưu VÀ nhanh hơn Dijkstra', 'Duyệt ít nút hơn đáng kể'],
+  'h(n) ≤ khoảng cách thực  →  Admissible heuristic  →  A* đảm bảo kết quả tối ưu như Dijkstra',
+);
+```
+
+- [ ] **Bước 4: Chạy kiểm tra**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: 6 slide.
+
+- [ ] **Bước 5: Commit**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 5-6 thuật toán BFS/DFS và Dijkstra/A*"
+```
+
+---
+
+## Task 5: Slide 7 — Giao diện & Tính năng + Slide 8 — Demo (MỚI)
+
+**Files:**
+- Modify: `gen_slides.mjs`
+
+- [ ] **Bước 1: Thêm Slide 7 (Giao diện)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 7 — Giao diện & Tính năng
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '05. Giao Diện và Tính Năng', ACC1);
+  addTitleBar(s, ACC1);
+
+  const features = [
+    ['🖱️ Chọn điểm',       'Click bản đồ, tự snap đến nút giao thông gần nhất.'],
+    ['▶  Chạy đồng thời', 'Bốn thuật toán chạy song song, hoạt ảnh từng bước đồng bộ.'],
+    ['⚙️ Điều chỉnh tốc độ','Thanh kéo 50ms–500ms điều chỉnh tốc độ hoạt ảnh theo thời gian thực.'],
+    ['👁  Toggle ẩn/hiện', 'Click thẻ thống kê để ẩn/hiện đường đi từng thuật toán.'],
+    ['🔄 Concentric Rings', 'BFS 8px · DFS 6px · Dijkstra 4px · A* 2px — thấy cả 4 cùng lúc.'],
+  ];
+
+  features.forEach(([title, desc], i) => {
+    glassCard(s, 0.35, 1.15 + i * 1.2, 6.9, 1.08);
+    txt(s, title, 0.55, 1.18 + i * 1.2, 6.5, 0.42, { fontSize: 15, bold: true, color: ACC2 });
+    txt(s, desc,  0.55, 1.6  + i * 1.2, 6.5, 0.55, { fontSize: 13, color: MUTED, wrap: true });
+  });
+
+  // Bảng màu bên phải
+  glassCard(s, 7.65, 1.15, 5.3, 6.0);
+  txt(s, 'Bảng màu thuật toán', 7.65, 1.2, 5.3, 0.45, { fontSize: 14, bold: true, color: MUTED, align: 'center' });
+
+  [[BFS_C, 'BFS', '8px — ngoài cùng'], [DFS_C, 'DFS', '6px'], [DIJ_C, 'Dijkstra', '4px'], [AST_C, 'A*', '2px — trong cùng']].forEach(([c, name, note], i) => {
+    const y = 1.8 + i * 1.2;
+    glassCard(s, 7.85, y, 4.9, 1.05, c);
+    s.addShape(prs.ShapeType.rect, { x: 7.9, y: y + 0.12, w: 0.16, h: 0.8, fill: { color: c }, line: { color: c } });
+    txt(s, name, 8.22, y + 0.06, 4.3, 0.44, { fontSize: 18, bold: true, color: c });
+    txt(s, note, 8.22, y + 0.54, 4.3, 0.38, { fontSize: 12, color: MUTED });
+  });
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 8 — Demo (SLIDE MỚI)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 8 — Demo giao diện (SLIDE MỚI)
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '06. Demo — Giao Diện Thực Tế', ACC2);
+  addTitleBar(s, ACC2);
+
+  // Placeholder lớn: screenshot bản đồ
+  glassCard(s, 0.35, 1.15, 8.4, 6.0, ACC2);
+  s.addText('🗺️', { x: 0.35, y: 1.15, w: 8.4, h: 3.2, align: 'center', valign: 'middle', fontSize: 56 });
+  txt(s, 'Screenshot bản đồ — hoạt ảnh 4 thuật toán', 0.35, 4.35, 8.4, 0.5, { fontSize: 13, color: MUTED, align: 'center' });
+  // 4 dải màu algo
+  [[BFS_C, 0], [DFS_C, 1], [DIJ_C, 2], [AST_C, 3]].forEach(([c, i]) => {
+    s.addShape(prs.ShapeType.rect, { x: 2.5 + i * 1.1, y: 4.9, w: 0.9, h: 0.18, fill: { color: c }, line: { color: c } });
+  });
+
+  // Placeholder nhỏ trên: bảng thống kê
+  glassCard(s, 9.0, 1.15, 4.0, 2.8, ACC1);
+  s.addText('📊', { x: 9.0, y: 1.15, w: 4.0, h: 1.5, align: 'center', valign: 'middle', fontSize: 36 });
+  txt(s, 'Bảng thống kê so sánh', 9.0, 2.65, 4.0, 0.5, { fontSize: 12, color: MUTED, align: 'center' });
+
+  // Placeholder nhỏ dưới: control panel
+  glassCard(s, 9.0, 4.2, 4.0, 2.95, ACC1);
+  s.addText('⚙️', { x: 9.0, y: 4.2, w: 4.0, h: 1.5, align: 'center', valign: 'middle', fontSize: 36 });
+  txt(s, 'Control panel · điều chỉnh tốc độ', 9.0, 5.7, 4.0, 0.5, { fontSize: 12, color: MUTED, align: 'center' });
+
+  txt(s, '* Thay bằng ảnh chụp màn hình thực tế khi in/xuất file', 0.35, 7.15, 12.6, 0.28, {
+    fontSize: 10, color: MUTED, italic: true, align: 'center',
+  });
+}
+```
+
+- [ ] **Bước 3: Chạy kiểm tra**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: 8 slide.
+
+- [ ] **Bước 4: Commit**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 7 giao diện tính năng, slide 8 demo (mới)"
+```
+
+---
+
+## Task 6: Slide 9 — Kết quả so sánh + Slide 10 — Kiểm thử
+
+**Files:**
+- Modify: `gen_slides.mjs`
+
+- [ ] **Bước 1: Thêm Slide 9 (So sánh — layout mới)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 9 — Kết quả so sánh
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '07. Kết Quả So Sánh', ACC2);
+  addTitleBar(s, ACC2);
+  txt(s, 'PTIT → Vincom Hà Đông (~3km) — kết quả điển hình', 0.4, 1.05, 12.5, 0.35, { fontSize: 12, color: MUTED, italic: true });
+
+  // ── Bảng ~55% bên trái ──────────────────────────────────────────────────
+  const tX = 0.35, tY = 1.5, colW = [2.2, 1.8, 1.9, 1.9], rowH = 0.7;
+  const headers = ['Thuật toán', 'Nút duyệt', 'Độ dài', 'Thời gian'];
+  const rows = [
+    ['● BFS',      '~180', '~2 400m', '~18ms', BFS_C],
+    ['● DFS',      '~320', '~4 100m', '~22ms', DFS_C],
+    ['● Dijkstra', '~220', '~2 100m', '~14ms', DIJ_C],
+    ['● A*',       '~95',  '~2 100m', '~8ms',  AST_C],
+  ];
+
+  // Header row
+  headers.forEach((h, ci) => {
+    const x = tX + colW.slice(0, ci).reduce((a, b) => a + b, 0);
+    s.addShape(prs.ShapeType.rect, { x, y: tY, w: colW[ci], h: rowH, fill: { color: BG2 }, line: { color: GLASBD } });
+    txt(s, h, x, tY, colW[ci], rowH, { fontSize: 13, bold: true, color: LAVNDR, align: 'center', valign: 'middle' });
+  });
+
+  // Data rows
+  rows.forEach(([alg, nodes, dist, time, c], ri) => {
+    [alg, nodes, dist, time].forEach((val, ci) => {
+      const x = tX + colW.slice(0, ci).reduce((a, b) => a + b, 0);
+      const y = tY + (ri + 1) * rowH;
+      s.addShape(prs.ShapeType.rect, { x, y, w: colW[ci], h: rowH, fill: { color: ri % 2 === 0 ? BG2 : GLASS }, line: { color: GLASBD } });
+      txt(s, val, x, y, colW[ci], rowH, {
+        fontSize: 14, bold: ci === 0,
+        color: ci === 0 ? c : WHITE,
+        align: ci === 0 ? 'left' : 'center', valign: 'middle',
+      });
+    });
+  });
+
+  // ── Nhận xét bên phải ───────────────────────────────────────────────────
+  const notes = [
+    [AST_C,  '🏆 A* — Hiệu quả nhất',       'Duyệt ít nút nhất (~95) nhờ heuristic. Nhanh gấp ~1.75× Dijkstra, cùng độ dài tối ưu.'],
+    [DIJ_C,  '✓ Dijkstra — Tối ưu đảm bảo', 'Đường ngắn nhất tuyệt đối. Chậm hơn A* vì không có định hướng.'],
+    [BFS_C,  '≈ BFS — Ít bước nhất',         'Tìm đường ít cạnh nhất, không tính trọng số. Dài hơn ~14% so với Dijkstra.'],
+    [DFS_C,  '✗ DFS — Kém nhất',             'Duyệt nhiều nút nhất, đường dài nhất (~4 100m). Không phù hợp tìm đường tối ưu.'],
+  ];
+
+  const nX = 8.0, nY = 1.5, nW = 5.0, nH = 1.4;
+  notes.forEach(([c, title, desc], i) => {
+    const y = nY + i * (nH + 0.1);
+    glassCard(s, nX, y, nW, nH, c);
+    txt(s, title, nX + 0.15, y + 0.1, nW - 0.2, 0.45, { fontSize: 13, bold: true, color: c });
+    txt(s, desc,  nX + 0.15, y + 0.55, nW - 0.2, 0.72, { fontSize: 11.5, color: MUTED, wrap: true });
+  });
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 10 (Kiểm thử)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 10 — Kiểm thử
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '08. Kiểm Thử', LAVNDR);
+  addTitleBar(s, LAVNDR);
+
+  // 4 stat cards
+  [['34', 'Unit Tests', BFS_C], ['100%', 'Pass Rate', AST_C], ['< 5s', 'Thời gian chạy', DIJ_C], ['TDD', 'Phương pháp', ACC1]].forEach(([val, label, c], i) => {
+    const x = 0.35 + i * 3.15;
+    glassCard(s, x, 1.15, 3.0, 2.1, c);
+    txt(s, val, x, 1.25, 3.0, 1.1, { fontSize: 38, bold: true, color: c, align: 'center', valign: 'middle' });
+    txt(s, label, x, 2.4, 3.0, 0.6, { fontSize: 14, color: MUTED, align: 'center', valign: 'middle' });
+  });
+
+  // Phạm vi kiểm thử
+  txt(s, 'Phạm vi kiểm thử:', 0.35, 3.5, 12.5, 0.45, { fontSize: 16, bold: true, color: WHITE });
+
+  const scope = [
+    ['Graph module', 'Nạp đúng 1 007 nút, 2 644 cạnh từ JSON'],
+    ['BFS / DFS',    'Trả về explored list và path hợp lệ'],
+    ['Dijkstra / A*','Khoảng cách tối ưu, length_m chính xác'],
+    ['API /nodes',   'Đúng định dạng, đủ số lượng'],
+    ['API /pathfind','Đúng 4 thuật toán, xử lý input sai'],
+    ['Edge cases',   'start==end, không có đường, node không tồn tại'],
+  ];
+
+  scope.forEach(([title, desc], i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = 0.35 + col * 6.4;
+    const y = 4.05 + row * 0.9;
+    glassCard(s, x, y, 6.15, 0.8);
+    txt(s, '✔  ' + title + ':', x + 0.15, y, 2.2, 0.8, { fontSize: 13, bold: true, color: AST_C, valign: 'middle' });
+    txt(s, desc, x + 2.3, y, 3.7, 0.8, { fontSize: 12, color: WHITE, valign: 'middle' });
+  });
+}
+```
+
+- [ ] **Bước 3: Chạy kiểm tra**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: 10 slide.
+
+- [ ] **Bước 4: Commit**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 9 so sánh (bảng + nhận xét), slide 10 kiểm thử"
+```
+
+---
+
+## Task 7: Slide 11 — Kết luận + Slide 12 — Tài liệu TK (MỚI) + Slide 13 — Cảm ơn
+
+**Files:**
+- Modify: `gen_slides.mjs`
+
+- [ ] **Bước 1: Thêm Slide 11 (Kết luận)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 11 — Kết luận
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '09. Kết Luận', MUTED);
+  addTitleBar(s, MUTED);
+
+  // Trái: đạt được
+  glassCard(s, 0.35, 1.15, 6.0, 6.0, AST_C);
+  txt(s, '✔  Kết quả đạt được', 0.35, 1.15, 6.0, 0.6, { fontSize: 16, bold: true, color: AST_C, align: 'center', valign: 'middle' });
+  ['Trực quan hóa 4 thuật toán đồng thời', 'Bản đồ thực Hà Đông 1 007 nút', 'Hoạt ảnh, toggle, điều chỉnh tốc độ', 'Concentric Rings — thấy cả 4 màu', '34 unit test, tất cả pass', 'README + GitHub public repo'].forEach((t, i) => {
+    txt(s, '•  ' + t, 0.6, 1.95 + i * 0.82, 5.5, 0.72, { fontSize: 14, color: WHITE });
+  });
+
+  // Phải: hướng phát triển
+  glassCard(s, 6.85, 1.15, 6.15, 6.0, DIJ_C);
+  txt(s, '→  Hướng phát triển', 6.85, 1.15, 6.15, 0.6, { fontSize: 16, bold: true, color: DIJ_C, align: 'center', valign: 'middle' });
+  ['Mở rộng toàn Hà Nội', 'Thêm Bellman-Ford, Bidirectional A*', 'Cho phép chỉnh sửa đồ thị trực tiếp', 'Export kết quả PDF / ảnh', 'So sánh side-by-side', 'Tích hợp dữ liệu giao thông thực'].forEach((t, i) => {
+    txt(s, '•  ' + t, 7.1, 1.95 + i * 0.82, 5.65, 0.72, { fontSize: 14, color: WHITE });
+  });
+}
+```
+
+- [ ] **Bước 2: Thêm Slide 12 — Tài liệu tham khảo (SLIDE MỚI)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 12 — Tài liệu tham khảo (SLIDE MỚI)
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '10. Tài Liệu Tham Khảo', LAVNDR);
+  addTitleBar(s, LAVNDR);
+
+  const refs = [
+    ['[1]', 'Russell, S. & Norvig, P. — Artificial Intelligence: A Modern Approach, 4th ed., Prentice Hall, 2020'],
+    ['[2]', 'OpenStreetMap contributors — openstreetmap.org (dữ liệu bản đồ Hà Đông, Hà Nội)'],
+    ['[3]', 'Boeing, G. — OSMnx: New Methods for Acquiring, Constructing, Analyzing, and Visualizing Complex Street Networks. Computers, Environment and Urban Systems, 2017'],
+    ['[4]', 'Leaflet.js — leafletjs.com · FastAPI — fastapi.tiangolo.com · PptxGenJS — gitbrent.github.io/PptxGenJS'],
+    ['[5]', 'Hart, P. E., Nilsson, N. J., & Raphael, B. — A Formal Basis for the Heuristic Determination of Minimum Cost Paths. IEEE TSSC, 1968'],
+  ];
+
+  refs.forEach(([num, text], i) => {
+    const y = 1.2 + i * 1.12;
+    glassCard(s, 0.35, y, 12.6, 0.98);
+    txt(s, num, 0.45, y, 0.7, 0.98, { fontSize: 16, bold: true, color: ACC1, align: 'center', valign: 'middle' });
+    txt(s, text, 1.25, y, 11.55, 0.98, { fontSize: 13, color: WHITE, valign: 'middle', wrap: true });
+  });
+}
+```
+
+- [ ] **Bước 3: Thêm Slide 13 (Cảm ơn)**
+
+```javascript
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 13 — Cảm ơn
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+
+  // Glow effects
+  s.addShape(prs.ShapeType.ellipse, { x: 9, y: -1.5, w: 6, h: 6, fill: { color: ACC1, transparency: 82 }, line: { color: ACC1, transparency: 82 } });
+  s.addShape(prs.ShapeType.ellipse, { x: -1.5, y: 4, w: 5, h: 5, fill: { color: ACC2, transparency: 85 }, line: { color: ACC2, transparency: 85 } });
+
+  // Accent bars hai bên
+  s.addShape(prs.ShapeType.rect, { x: 0,     y: 0, w: 0.06, h: 7.5, fill: { color: ACC1 }, line: { color: ACC1 } });
+  s.addShape(prs.ShapeType.rect, { x: 13.27, y: 0, w: 0.06, h: 7.5, fill: { color: ACC2 }, line: { color: ACC2 } });
+
+  txt(s, 'Xin chân thành cảm ơn!', 0.4, 2.0, 12.53, 1.3, { fontSize: 46, bold: true, color: WHITE, align: 'center', valign: 'middle' });
+
+  // Gạch gradient giả
+  s.addShape(prs.ShapeType.rect, { x: 3.5, y: 3.45, w: 3.15, h: 0.05, fill: { color: ACC1 }, line: { color: ACC1 } });
+  s.addShape(prs.ShapeType.rect, { x: 6.68, y: 3.45, w: 3.15, h: 0.05, fill: { color: ACC2 }, line: { color: ACC2 } });
+
+  txt(s, 'PathFinder AI — BFS · DFS · Dijkstra · A*', 0.4, 3.65, 12.53, 0.65, { fontSize: 20, color: LAVNDR, align: 'center' });
+  txt(s, '🎓  Đồ án Nhập Môn Trí Tuệ Nhân Tạo — PTIT 2025', 0.4, 4.45, 12.53, 0.5, { fontSize: 16, color: MUTED, align: 'center' });
+  txt(s, 'github.com/huuvietnguyen72/NhapMonAI_PathFinder', 0.4, 5.1, 12.53, 0.45, { fontSize: 14, color: BFS_C, align: 'center', italic: true });
+}
+```
+
+- [ ] **Bước 4: Chạy kiểm tra lần cuối**
+
+```bash
+node gen_slides.mjs
+```
+Kỳ vọng: `OK: ThuyetTrinh_PathFinderAI.pptx` — mở file, kiểm tra đủ 13 slide, scroll qua từng slide không có lỗi hiển thị rõ ràng.
+
+- [ ] **Bước 5: Commit cuối**
+
+```bash
+git add gen_slides.mjs ThuyetTrinh_PathFinderAI.pptx
+git commit -m "feat: slide 11 kết luận, slide 12 tài liệu tham khảo (mới), slide 13 cảm ơn — hoàn thành 13 slide"
+```
+
+---
+
+## Checklist tự review spec
+
+- [x] Slide 1–13 đều có task tương ứng
+- [x] Không có TBD hoặc placeholder không giải thích
+- [x] Helper `algoSlide` định nghĩa ở Task 4 dùng cho cả slide 5 và 6
+- [x] Hằng số màu (`BFS_C`, `DIJ_C`, v.v.) nhất quán từ Task 1 đến Task 7
+- [x] Giới hạn kỹ thuật pptxgenjs (không có gradient text, không có backdrop-filter) đã được giải thích và xử lý
+- [x] Mỗi task có lệnh `node gen_slides.mjs` để kiểm tra
