@@ -439,6 +439,78 @@ algoSlide(
   });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 11 — Kết luận
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '09. Kết Luận', MUTED);
+  addTitleBar(s, MUTED);
+
+  // Trái: đạt được
+  glassCard(s, 0.35, 1.15, 6.0, 6.0, AST_C);
+  txt(s, '✔  Kết quả đạt được', 0.35, 1.15, 6.0, 0.6, { fontSize: 16, bold: true, color: AST_C, align: 'center', valign: 'middle' });
+  ['Trực quan hóa 4 thuật toán đồng thời', 'Bản đồ thực Hà Đông 1 007 nút', 'Hoạt ảnh, toggle, điều chỉnh tốc độ', 'Concentric Rings — thấy cả 4 màu', '34 unit test, tất cả pass', 'README + GitHub public repo'].forEach((t, i) => {
+    txt(s, '•  ' + t, 0.6, 1.95 + i * 0.82, 5.5, 0.72, { fontSize: 14, color: WHITE });
+  });
+
+  // Phải: hướng phát triển
+  glassCard(s, 6.85, 1.15, 6.15, 6.0, DIJ_C);
+  txt(s, '→  Hướng phát triển', 6.85, 1.15, 6.15, 0.6, { fontSize: 16, bold: true, color: DIJ_C, align: 'center', valign: 'middle' });
+  ['Mở rộng toàn Hà Nội', 'Thêm Bellman-Ford, Bidirectional A*', 'Cho phép chỉnh sửa đồ thị trực tiếp', 'Export kết quả PDF / ảnh', 'So sánh side-by-side', 'Tích hợp dữ liệu giao thông thực'].forEach((t, i) => {
+    txt(s, '•  ' + t, 7.1, 1.95 + i * 0.82, 5.65, 0.72, { fontSize: 14, color: WHITE });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 12 — Tài liệu tham khảo (SLIDE MỚI)
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+  addTitle(s, '10. Tài Liệu Tham Khảo', LAVNDR);
+  addTitleBar(s, LAVNDR);
+
+  const refs = [
+    ['[1]', 'Russell, S. & Norvig, P. — Artificial Intelligence: A Modern Approach, 4th ed., Prentice Hall, 2020'],
+    ['[2]', 'OpenStreetMap contributors — openstreetmap.org (dữ liệu bản đồ Hà Đông, Hà Nội)'],
+    ['[3]', 'Boeing, G. — OSMnx: New Methods for Acquiring, Constructing, Analyzing, and Visualizing Complex Street Networks. Computers, Environment and Urban Systems, 2017'],
+    ['[4]', 'Leaflet.js — leafletjs.com · FastAPI — fastapi.tiangolo.com · PptxGenJS — gitbrent.github.io/PptxGenJS'],
+    ['[5]', 'Hart, P. E., Nilsson, N. J., & Raphael, B. — A Formal Basis for the Heuristic Determination of Minimum Cost Paths. IEEE TSSC, 1968'],
+  ];
+
+  refs.forEach(([num, text], i) => {
+    const y = 1.2 + i * 1.12;
+    glassCard(s, 0.35, y, 12.6, 0.98);
+    txt(s, num, 0.45, y, 0.7, 0.98, { fontSize: 16, bold: true, color: ACC1, align: 'center', valign: 'middle' });
+    txt(s, text, 1.25, y, 11.55, 0.98, { fontSize: 13, color: WHITE, valign: 'middle', wrap: true });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SLIDE 13 — Cảm ơn
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const s = newSlide();
+
+  // Glow effects
+  s.addShape(prs.ShapeType.ellipse, { x: 9, y: -1.5, w: 6, h: 6, fill: { color: ACC1, transparency: 82 }, line: { color: ACC1, transparency: 82 } });
+  s.addShape(prs.ShapeType.ellipse, { x: -1.5, y: 4, w: 5, h: 5, fill: { color: ACC2, transparency: 85 }, line: { color: ACC2, transparency: 85 } });
+
+  // Accent bars hai bên
+  s.addShape(prs.ShapeType.rect, { x: 0,     y: 0, w: 0.06, h: 7.5, fill: { color: ACC1 }, line: { color: ACC1 } });
+  s.addShape(prs.ShapeType.rect, { x: 13.27, y: 0, w: 0.06, h: 7.5, fill: { color: ACC2 }, line: { color: ACC2 } });
+
+  txt(s, 'Xin chân thành cảm ơn!', 0.4, 2.0, 12.53, 1.3, { fontSize: 46, bold: true, color: WHITE, align: 'center', valign: 'middle' });
+
+  // Gạch gradient giả
+  s.addShape(prs.ShapeType.rect, { x: 3.5, y: 3.45, w: 3.15, h: 0.05, fill: { color: ACC1 }, line: { color: ACC1 } });
+  s.addShape(prs.ShapeType.rect, { x: 6.68, y: 3.45, w: 3.15, h: 0.05, fill: { color: ACC2 }, line: { color: ACC2 } });
+
+  txt(s, 'PathFinder AI — BFS · DFS · Dijkstra · A*', 0.4, 3.65, 12.53, 0.65, { fontSize: 20, color: LAVNDR, align: 'center' });
+  txt(s, 'Đồ án Nhập Môn Trí Tuệ Nhân Tạo — PTIT 2025', 0.4, 4.45, 12.53, 0.5, { fontSize: 16, color: MUTED, align: 'center' });
+  txt(s, 'github.com/huuvietnguyen72/NhapMonAI_PathFinder', 0.4, 5.1, 12.53, 0.45, { fontSize: 14, color: BFS_C, align: 'center', italic: true });
+}
+
 prs.writeFile({ fileName: 'ThuyetTrinh_PathFinderAI.pptx' })
   .then(() => console.log('OK: ThuyetTrinh_PathFinderAI.pptx'))
   .catch(err => { console.error(err); process.exit(1); });
