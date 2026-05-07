@@ -18,3 +18,17 @@ env/
 # IDE
 .vscode/
 .idea/
+
+# Node (dùng để tạo báo cáo/slide)
+node_modules/
+package-lock.json
+package.json
+
+# PPTX generated files
+*.pptx
+
+# Windows Office lock files
+~$*
+
+# Internal tooling docs
+docs/superpowers/
